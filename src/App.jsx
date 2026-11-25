@@ -9,6 +9,13 @@ import { Snowfall } from "./Components/Snowfall"
 import { Login } from "./Components/Auth/Login"
 import { Register } from "./Components/Auth/Register"
 import { Quotes } from "./Components/Quotes"
+import { PROJECTS } from "./data/project"
+let EDITION_LABELS = {
+  winter: "✨ CHRISTMAS EDITION",
+  summer: "☀️ SUMMER EDITION",
+  halloween: "🎃 HALLOWEEN EDITION"
+}
+import {Sidebar} from "./Components/Sidebar"
 import "./App.css"
 
 let translations = {
@@ -51,7 +58,22 @@ let translations = {
     passwordShort: "Пароль должен содержать минимум 6 символов",
     passwordMismatch: "Пароли не совпадают",
     emailExists: "Этот email уже зарегистрирован",
-    invalidLogin: "Неверный email или пароль"
+    invalidLogin: "Неверный email или пароль",
+    low: "Низкий",
+    medium: "Средний",
+    high: "Высокий",
+    priority: "Приоритет",
+    search: "🔍 Поиск задач...",
+    sortDefault: "Без сортировки",
+    sortPriority: "По приоритету",
+    sortDate: "По дате",
+    subtaskPlaceholder: "Подзадача...",
+    inbox: "Входящие",
+    upcoming: "Предстоящее",
+    filtersLabels: "Фильтры и метки",
+    myProjects: "Мои проекты",
+    addTaskLabel: "Добавить задачу",
+    searchShort: "Поиск"
   },
 
   en: {
@@ -93,7 +115,22 @@ let translations = {
     passwordShort: "Password must contain at least 6 characters",
     passwordMismatch: "Passwords do not match",
     emailExists: "This email is already registered",
-    invalidLogin: "Incorrect email or password"
+    invalidLogin: "Incorrect email or password",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    priority: "Priority",
+    search: "🔍 Search tasks...",
+    sortDefault: "No sorting",
+    sortPriority: "By priority",
+    sortDate: "By date",
+    subtaskPlaceholder: "Subtask...",
+    inbox: "Inbox",
+    upcoming: "Upcoming",
+    filtersLabels: "Filters & labels",
+    myProjects: "My projects",
+    addTaskLabel: "Add task",
+    searchShort: "Search"
   }
 }
 
@@ -114,6 +151,12 @@ function App() {
 
   let [currentFilter, setCurrentFilter] = useState("all")
   let [message, setMessage] = useState("")
+
+  let [search, setSearch] = useState("")
+  let [sortBy, setSortBy] = useState("default")
+
+  let [activeView, setActiveView] = useState("inbox")
+  let [sidebarOpen, setSidebarOpen] = useState(false)
 
   let [language, setLanguage] = useState(() => {
     return localStorage.getItem("language") || "ru"
@@ -164,7 +207,7 @@ function App() {
   }, [message])
 
   
-function addTask(text, date) {
+function addTask(text, date, priority, project) {
   let cleanText = text.trim()
   let alreadyExists = tasks.some((task) =>
     task.text.trim().toLowerCase() === cleanText.toLowerCase()
@@ -179,7 +222,9 @@ function addTask(text, date) {
     id: crypto.randomUUID(),
     text: cleanText,
     date: date,
-    done: false
+    done: false,
+    priority: priority || "medium",
+    subtasks: []
   }
 
   setTasks((prevTasks) => [...prevTasks, newTask])
@@ -220,6 +265,53 @@ function addTask(text, date) {
       prevTasks.filter((task) => task.id !== id)
     )
   }
+  
+  function addSubtask(taskId, text) {
+    let cleanText = text.trim()
+    if (cleanText === "") return
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: [
+                ...(task.subtasks || []),
+                { id: crypto.randomUUID(), text: cleanText, done: false }
+              ]
+            }
+          : task
+      )
+    )
+  }
+
+  function toggleSubtask(taskId, subtaskId) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((sub) =>
+                sub.id === subtaskId ? { ...sub, done: !sub.done } : sub
+              )
+            }
+          : task
+      )
+    )
+  }
+
+  function deleteSubtask(taskId, subtaskId) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.filter((sub) => sub.id !== subtaskId)
+            }
+          : task
+      )
+    )
+  }
 
   function clearCompleted() {
     setTasks((prevTasks) =>
@@ -227,17 +319,65 @@ function addTask(text, date) {
     )
   }
 
-  let filteredTasks = tasks.filter((task) => {
-    if (currentFilter === "active") {
-      return !task.done
-    }
+  let priorityOrder = { high: 0, medium: 1, low: 2 }
 
-    if (currentFilter === "done") {
-      return task.done
-    }
+  let todayStr = new Date().toLocaleDateString("en-CA")
 
-    return true
-  })
+  let counts = {
+    inbox: tasks.filter((task) => !task.done && !task.project).length,
+    today: tasks.filter((task) => !task.done && task.date === todayStr).length,
+    upcoming: tasks.filter(
+      (task) => !task.done && task.date && task.date > todayStr
+    ).length,
+    projects: Object.fromEntries(
+      PROJECTS.map((p) => [
+        p.id,
+        tasks.filter((task) => !task.done && task.project === p.id).length
+      ])
+    )
+  }
+
+  function focusAddTask() {
+    document.querySelector(".task-form input[type='text']")?.focus()
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  function focusSearch() {
+    document.querySelector(".search-input")?.focus()
+  }
+
+  let filteredTasks = tasks
+    .filter((task) => {
+      if (activeView === "inbox") return !task.project
+      if (activeView === "today") return task.date === todayStr
+      if (activeView === "upcoming") return task.date && task.date > todayStr
+      if (activeView.startsWith("project:")) {
+        return task.project === activeView.split(":")[1]
+      }
+      return true
+    })
+    .filter((task) => {
+      if (currentFilter === "active") return !task.done
+      if (currentFilter === "done") return task.done
+      return true
+    })
+    .filter((task) =>
+      task.text.toLowerCase().includes(search.trim().toLowerCase())
+    )
+
+  if (sortBy === "priority") {
+    filteredTasks = [...filteredTasks].sort(
+      (a, b) =>
+        priorityOrder[a.priority || "medium"] -
+        priorityOrder[b.priority || "medium"]
+    )
+  }
+
+  if (sortBy === "date") {
+    filteredTasks = [...filteredTasks].sort((a, b) =>
+      (a.date || "9999").localeCompare(b.date || "9999")
+    )
+  }
 
   let completedCount = tasks.filter(
     (task) => task.done
@@ -328,16 +468,37 @@ if (!currentUser) {
 
 return (
   <div className={`app ${season} ${theme}`}>
-    <Quotes language={language} />
+        <Snowfall season={season} />
 
+    <div className="layout">
 
-      <Snowfall season={season} />
+      <Sidebar
+        t={t}
+        language={language}
+        activeView={activeView}
+        onChangeView={setActiveView}
+        onAddTask={focusAddTask}
+        onSearch={focusSearch}
+        counts={counts}
+        userName={currentUser.name}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <div className="container">
+      <main className="container">
+
+        <Quotes language={language} />
 
         <div className="top-bar">
+          <button
+            className="setting-button menu-toggle"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Menu"
+          >
+            ☰
+          </button>
           <span className="season-label">
-            ✨ CHRISTMAS EDITION
+            {EDITION_LABELS[season] || EDITION_LABELS.winter}
           </span>
 
           <div className="settings">
@@ -394,6 +555,8 @@ return (
         <TaskForm
           onAddTask={addTask}
           t={t}
+          language={language}
+          defaultProject={activeView.startsWith("project:") ? activeView.split(":")[1] : ""}
         />
 
         <div className="progress-section">
@@ -412,6 +575,26 @@ return (
 
         </div>
 
+          <div className="tools-row">
+          <input
+            className="search-input"
+            type="text"
+            placeholder={t("search")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <select
+            className="setting-select"
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+          >
+            <option value="default">{t("sortDefault")}</option>
+            <option value="priority">{t("sortPriority")}</option>
+            <option value="date">{t("sortDate")}</option>
+          </select>
+        </div>
+
         <Filters
           currentFilter={currentFilter}
           onChangeFilter={setCurrentFilter}
@@ -422,6 +605,9 @@ return (
           tasks={filteredTasks}
           onToggle={toggleTask}
           onDelete={deleteTask}
+          onAddSubtask={addSubtask}
+          onToggleSubtask={toggleSubtask}
+          onDeleteSubtask={deleteSubtask}
           t={t}
           language={language}
         />
@@ -446,7 +632,9 @@ return (
 
         </div>
 
-      </div>
+        </main>
+
+    </div>
 
       <Toast message={message} />
 
@@ -454,4 +642,4 @@ return (
   )
 }
 
-export { App }
+export {App}

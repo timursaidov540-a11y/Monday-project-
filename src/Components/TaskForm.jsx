@@ -1,20 +1,30 @@
-import {useState} from "react"
+import {useEffect, useState} from "react"
+import {PROJECTS} from "../data/project"
 
-function TaskForm({onAddTask, t}) {
+function TaskForm({onAddTask, t, language, defaultProject}) {
   let [text, setText] = useState("")
   let [date, setDate] = useState("")
+  let [priority, setPriority] = useState("medium")
+  let [project, setProject] = useState(defaultProject || "")
 
-  function handleSubmit(event){
+  // Когда пользователь переходит в другой проект, форма тоже подставляет его
+  useEffect(() => {
+    setProject(defaultProject || "")
+  }, [defaultProject])
+
+  function handleSubmit(event) {
     event.preventDefault()
 
-    if (text.trim() === ""){
+    if (text.trim() === "") {
       return
     }
 
-    onAddTask(text, date)
+    onAddTask(text, date, priority, project)
 
     setText("")
     setDate("")
+    setPriority("medium")
+    setProject(defaultProject || "")
   }
 
   return (
@@ -32,6 +42,27 @@ function TaskForm({onAddTask, t}) {
         value={date}
         onChange={(event) => setDate(event.target.value)}
       />
+
+      <select
+        value={priority}
+        onChange={(event) => setPriority(event.target.value)}
+      >
+        <option value="low">🟢 {t("low")}</option>
+        <option value="medium">🟡 {t("medium")}</option>
+        <option value="high">🔴 {t("high")}</option>
+      </select>
+
+      <select
+        value={project}
+        onChange={(event) => setProject(event.target.value)}
+      >
+        <option value="">{t("inbox")}</option>
+        {PROJECTS.map((p) => (
+          <option key={p.id} value={p.id}>
+            # {language === "ru" ? p.ru : p.en}
+          </option>
+        ))}
+      </select>
 
       <button type="submit">
         {t("add")}

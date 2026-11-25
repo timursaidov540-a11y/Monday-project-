@@ -1,6 +1,15 @@
 import {TaskItem} from "./TaskItem"
 
-function TaskList({ tasks, onToggle, onDelete, t, language }) {
+function TaskList({
+  tasks,
+  onToggle,
+  onDelete,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
+  t,
+  language
+}) {
   if (tasks.length === 0) {
     return (
       <div className="empty">
@@ -19,6 +28,9 @@ function TaskList({ tasks, onToggle, onDelete, t, language }) {
           task={task}
           onToggle={onToggle}
           onDelete={onDelete}
+          onAddSubtask={onAddSubtask}
+          onToggleSubtask={onToggleSubtask}
+          onDeleteSubtask={onDeleteSubtask}
           t={t}
           language={language}
         />

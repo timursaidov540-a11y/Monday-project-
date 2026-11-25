@@ -1,3 +1,5 @@
+import {useState} from "react"
+
 function getDateLabel(date, language, t) {
   if (!date) return ""
 
@@ -26,8 +28,29 @@ function getDateLabel(date, language, t) {
   )
 }
 
-function TaskItem({task, onToggle, onDelete, t, language}) {
+function TaskItem({
+  task,
+  onToggle,
+  onDelete,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
+  t,
+  language
+}) {
+  let [subtaskText, setSubtaskText] = useState("")
+
   let dateLabel = getDateLabel(task.date, language, t)
+
+  // Старые задачи без приоритета получают "medium"
+  let priority = task.priority || "medium"
+  let subtasks = task.subtasks || []
+
+  function handleAddSubtask(event) {
+    event.preventDefault()
+    onAddSubtask(task.id, subtaskText)
+    setSubtaskText("")
+  }
 
   return (
     <div className={`task-item ${task.done ? "completed" : ""}`}>
@@ -44,11 +67,50 @@ function TaskItem({task, onToggle, onDelete, t, language}) {
           {task.text}
         </span>
 
-        {dateLabel && (
-          <small className="task-date">
-            📅 {dateLabel}
-          </small>
+        <div className="task-meta">
+          <span className={`priority-badge priority-${priority}`}>
+            {t(priority)}
+          </span>
+
+          {dateLabel && (
+            <small className="task-date">
+              📅 {dateLabel}
+            </small>
+          )}
+        </div>
+
+        {subtasks.length > 0 && (
+          <div className="subtask-list">
+            {subtasks.map((sub) => (
+              <div key={sub.id} className="subtask-item">
+                <input
+                  type="checkbox"
+                  checked={sub.done}
+                  onChange={() => onToggleSubtask(task.id, sub.id)}
+                />
+                <span className={sub.done ? "subtask-done" : ""}>
+                  {sub.text}
+                </span>
+                <button
+                  className="subtask-delete"
+                  onClick={() => onDeleteSubtask(task.id, sub.id)}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         )}
+
+        <form className="subtask-form" onSubmit={handleAddSubtask}>
+          <input
+            type="text"
+            placeholder={t("subtaskPlaceholder")}
+            value={subtaskText}
+            onChange={(event) => setSubtaskText(event.target.value)}
+          />
+          <button type="submit">+</button>
+        </form>
 
       </div>
 
