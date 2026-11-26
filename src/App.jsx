@@ -15,6 +15,7 @@ let EDITION_LABELS = {
   summer: "☀️ SUMMER EDITION",
   halloween: "🎃 HALLOWEEN EDITION"
 }
+import { LABELS } from "./data/labels"
 import {Sidebar} from "./Components/Sidebar"
 import "./App.css"
 
@@ -73,7 +74,15 @@ let translations = {
     filtersLabels: "Фильтры и метки",
     myProjects: "Мои проекты",
     addTaskLabel: "Добавить задачу",
-    searchShort: "Поиск"
+    searchShort: "Поиск",
+    iconSnowflake: "Снежинка",
+    iconSnowman: "Снеговик",
+    iconSanta: "Дед Мороз",
+    iconTree: "Ёлка",
+    iconGift: "Подарок",
+    iconDeer: "Олень",
+    noLabel: "Без метки",
+    labelsTitle: "Метки"
   },
 
   en: {
@@ -130,7 +139,15 @@ let translations = {
     filtersLabels: "Filters & labels",
     myProjects: "My projects",
     addTaskLabel: "Add task",
-    searchShort: "Search"
+    searchShort: "Search",
+    iconSnowflake: "Snowflake",
+    iconSnowman: "Snowman",
+    iconSanta: "Santa",
+    iconTree: "Tree",
+    iconGift: "Gift",
+    iconDeer: "Reindeer",
+    noLabel: "No label",
+    labelsTitle: "Labels"
   }
 }
 
@@ -207,7 +224,7 @@ function App() {
   }, [message])
 
   
-function addTask(text, date, priority, project) {
+function addTask(text, date, priority, project, label) {
   let cleanText = text.trim()
   let alreadyExists = tasks.some((task) =>
     task.text.trim().toLowerCase() === cleanText.toLowerCase()
@@ -224,6 +241,8 @@ function addTask(text, date, priority, project) {
     date: date,
     done: false,
     priority: priority || "medium",
+    project: project || "",
+    label: label || "",
     subtasks: []
   }
 
@@ -334,7 +353,18 @@ function addTask(text, date, priority, project) {
         p.id,
         tasks.filter((task) => !task.done && task.project === p.id).length
       ])
-    )
+    ),
+    labels: Object.fromEntries(
+      LABELS.map((l) => [
+        l.id,
+        tasks.filter((task) => !task.done && task.label === l.id).length
+      ])
+    ),
+    priority: {
+      high: tasks.filter((task) => !task.done && (task.priority || "medium") === "high").length,
+      medium: tasks.filter((task) => !task.done && (task.priority || "medium") === "medium").length,
+      low: tasks.filter((task) => !task.done && (task.priority || "medium") === "low").length
+    }
   }
 
   function focusAddTask() {
@@ -354,6 +384,12 @@ function addTask(text, date, priority, project) {
       if (activeView.startsWith("project:")) {
         return task.project === activeView.split(":")[1]
       }
+      if (activeView.startsWith("label:")) {
+        return task.label === activeView.split(":")[1]
+      }
+      if (activeView.startsWith("priority:")) {
+        return (task.priority || "medium") === activeView.split(":")[1]
+      }
       return true
     })
     .filter((task) => {
@@ -364,14 +400,6 @@ function addTask(text, date, priority, project) {
     .filter((task) =>
       task.text.toLowerCase().includes(search.trim().toLowerCase())
     )
-
-  if (sortBy === "priority") {
-    filteredTasks = [...filteredTasks].sort(
-      (a, b) =>
-        priorityOrder[a.priority || "medium"] -
-        priorityOrder[b.priority || "medium"]
-    )
-  }
 
   if (sortBy === "date") {
     filteredTasks = [...filteredTasks].sort((a, b) =>
@@ -537,16 +565,16 @@ return (
       </select>
       
       <select
-      className="setting-select"
-      value={icon}
-      onChange={(event) => setIcon(event.target.value)}
-    >
-      <option value="❄️">❄️ Снежинка</option>
-      <option value="⛄">⛄ Снеговик</option>
-      <option value="🎅">🎅 Дед Мороз</option>
-      <option value="🎄">🎄 Ёлка</option>
-      <option value="🎁">🎁 Подарок</option>
-      <option value="🦌">🦌 Олень</option>
+        className="setting-select"
+        value={icon}
+        onChange={(event) => setIcon(event.target.value)}
+      >
+        <option value="❄️">❄️ {t("iconSnowflake")}</option>
+        <option value="⛄">⛄ {t("iconSnowman")}</option>
+        <option value="🎅">🎅 {t("iconSanta")}</option>
+        <option value="🎄">🎄 {t("iconTree")}</option>
+        <option value="🎁">🎁 {t("iconGift")}</option>
+        <option value="🦌">🦌 {t("iconDeer")}</option>
       </select>
         </div>
 

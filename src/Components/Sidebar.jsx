@@ -1,4 +1,12 @@
-import {PROJECTS} from "../data/project"
+import { useState } from "react"
+import { PROJECTS } from "../data/project"
+import { LABELS } from "../data/labels"
+
+const PRIORITIES = [
+  { id: "high", color: "#d64545" },
+  { id: "medium", color: "#d4a017" },
+  { id: "low", color: "#2e9e5b" }
+]
 
 function NavItem({ icon, label, count, active, onClick, iconColor }) {
   return (
@@ -27,6 +35,8 @@ function Sidebar({
   isOpen,
   onClose
 }) {
+  let [filtersOpen, setFiltersOpen] = useState(false)
+
   function go(view) {
     onChangeView(view)
     onClose()
@@ -92,9 +102,39 @@ function Sidebar({
           <NavItem
             icon="🏷️"
             label={t("filtersLabels")}
-            onClick={onClose}
+            active={filtersOpen}
+            onClick={() => setFiltersOpen((prev) => !prev)}
           />
         </nav>
+
+        {filtersOpen && (
+          <nav className="nav-group">
+            <div className="nav-section-title">{t("priority")}</div>
+            {PRIORITIES.map((p) => (
+              <NavItem
+                key={p.id}
+                icon="●"
+                iconColor={p.color}
+                label={t(p.id)}
+                count={counts.priority[p.id]}
+                active={activeView === `priority:${p.id}`}
+                onClick={() => go(`priority:${p.id}`)}
+              />
+            ))}
+
+            <div className="nav-section-title">{t("labelsTitle")}</div>
+            {LABELS.map((l) => (
+              <NavItem
+                key={l.id}
+                icon="🏷️"
+                label={language === "ru" ? l.ru : l.en}
+                count={counts.labels[l.id]}
+                active={activeView === `label:${l.id}`}
+                onClick={() => go(`label:${l.id}`)}
+              />
+            ))}
+          </nav>
+        )}
 
         <div className="nav-section-title">{t("myProjects")}</div>
 
@@ -117,4 +157,4 @@ function Sidebar({
   )
 }
 
-export {Sidebar}
+export { Sidebar }

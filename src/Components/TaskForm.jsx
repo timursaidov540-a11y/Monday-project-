@@ -1,13 +1,14 @@
 import {useEffect, useState} from "react"
 import {PROJECTS} from "../data/project"
+import {LABELS} from "../data/labels"
 
 function TaskForm({onAddTask, t, language, defaultProject}) {
   let [text, setText] = useState("")
   let [date, setDate] = useState("")
   let [priority, setPriority] = useState("medium")
   let [project, setProject] = useState(defaultProject || "")
+  let [label, setLabel] = useState("")
 
-  // Когда пользователь переходит в другой проект, форма тоже подставляет его
   useEffect(() => {
     setProject(defaultProject || "")
   }, [defaultProject])
@@ -19,12 +20,13 @@ function TaskForm({onAddTask, t, language, defaultProject}) {
       return
     }
 
-    onAddTask(text, date, priority, project)
+    onAddTask(text, date, priority, project, label)
 
     setText("")
     setDate("")
     setPriority("medium")
     setProject(defaultProject || "")
+    setLabel("")
   }
 
   return (
@@ -60,6 +62,18 @@ function TaskForm({onAddTask, t, language, defaultProject}) {
         {PROJECTS.map((p) => (
           <option key={p.id} value={p.id}>
             # {language === "ru" ? p.ru : p.en}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={label}
+        onChange={(event) => setLabel(event.target.value)}
+      >
+        <option value="">🏷️ {t("noLabel")}</option>
+        {LABELS.map((l) => (
+          <option key={l.id} value={l.id}>
+            🏷️ {language === "ru" ? l.ru : l.en}
           </option>
         ))}
       </select>
